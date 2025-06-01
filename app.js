@@ -337,13 +337,9 @@ async function recognizeSong(audioBlob) {
           <i class="fas fa-music-slash"></i>
           <h3>গান শনাক্ত করা যায়নি</h3>
           <p>দুঃখিত, আমরা আপনার অডিও সম্পর্কে কোন তথ্য খুঁজে পাইনি।</p>
-          <div class="streaming-links">
-            <a href="https://www.youtube.com/" target="_blank" class="streaming-link youtube">
-              <i class="fab fa-youtube"></i> YouTube এ যান
-            </a>
-          </div>
+ 
           <button class="share-btn" id="tryAgainBtn">
-            <i class="fas fa-redo"></i> আবার চেষ্টা করুন
+             আবার চেষ্টা করুন
           </button>
         </div>
       `;
@@ -363,13 +359,9 @@ async function recognizeSong(audioBlob) {
         <i class="fas fa-exclamation-triangle"></i>
         <h3>একটি ত্রুটি ঘটেছে</h3>
         <p>দুঃখিত, গান চেনার সময় একটি ত্রুটি দেখা দিয়েছে। আবার চেষ্টা করুন।</p>
-        <div class="streaming-links">
-          <a href="https://www.youtube.com/" target="_blank" class="streaming-link youtube">
-            <i class="fab fa-youtube"></i> YouTube এ যান
-          </a>
-        </div>
+
         <button class="share-btn" id="tryAgainBtn">
-          <i class="fas fa-redo"></i> আবার চেষ্টা করুন
+          </i> আবার চেষ্টা করুন
         </button>
       </div>
     `;
