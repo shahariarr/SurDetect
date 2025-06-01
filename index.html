@@ -65,7 +65,7 @@
         </div>
       </div>
       
-      <!-- Results View (Hidden Initially) -->
+      <!-- ENHANCED Results View -->
       <div id="results-view" class="view">
         <div class="result-header">
           <button id="backToListening" class="back-btn">
@@ -74,18 +74,53 @@
           <h2>গান পাওয়া গেছে!</h2>
         </div>
         
+        <div class="confetti-container">
+          <div class="confetti confetti1"></div>
+          <div class="confetti confetti2"></div>
+          <div class="confetti confetti3"></div>
+          <div class="confetti confetti4"></div>
+          <div class="confetti confetti5"></div>
+        </div>
+        
         <div id="song-result" class="song-result">
           <!-- Results will be populated here via JavaScript -->
         </div>
+        
+        <div class="actions-container">
+          <button id="listenMoreBtn" class="action-btn">
+            <i class="fas fa-music"></i>
+            <span>আরও গান শনাক্ত করুন</span>
+          </button>
+          <button id="goToHistoryBtn" class="action-btn secondary">
+            <i class="fas fa-history"></i>
+            <span>সম্প্রতি খোঁজা</span>
+          </button>
+        </div>
       </div>
       
-      <!-- History View (Hidden Initially) -->
+      <!-- ENHANCED History View -->
       <div id="history-view" class="view">
         <div class="history-header">
           <button id="backFromHistory" class="back-btn">
             <i class="fas fa-arrow-left"></i>
           </button>
           <h2>আপনার সাম্প্রতিক গান</h2>
+          <div class="history-actions">
+            <button id="clearHistoryBtn" class="clear-history-btn" aria-label="Clear History">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div class="history-tabs">
+          <button class="history-tab active" data-filter="all">সবগুলো</button>
+          <button class="history-tab" data-filter="today">আজ</button>
+          <button class="history-tab" data-filter="week">এই সপ্তাহ</button>
+        </div>
+        
+        <div class="search-bar">
+          <i class="fas fa-search search-icon"></i>
+          <input type="text" id="historySearch" placeholder="গান খুঁজুন...">
         </div>
         
         <div id="history-list" class="history-list">
@@ -95,6 +130,10 @@
         <div id="empty-history" class="empty-state hidden">
           <i class="fas fa-music-slash"></i>
           <p>আপনি এখনও কোন গান খোঁজেননি</p>
+          <button id="startListeningBtn" class="primary-btn">
+            <i class="fas fa-music"></i>
+            <span>শুনতে শুরু করুন</span>
+          </button>
         </div>
       </div>
     </main>
@@ -121,3 +160,4 @@
   <script src="app.js"></script>
 </body>
 </html>
+
