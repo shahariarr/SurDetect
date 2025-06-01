@@ -479,27 +479,36 @@ body.dark .streaming-link:hover {
 .streaming-link.youtube {
   background-color: #ff0000;
   color: white;
-  font-weight: 700;
-  padding: 0.8rem 1.3rem;
-  order: -1; /* Makes YouTube appear first */
-  box-shadow: 0 4px 8px rgba(255, 0, 0, 0.3);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 1.2rem;
+  border-radius: 50px;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 4px 8px rgba(255, 0, 0, 0.2);
+  order: -1; /* Makes YouTube appear first in flex container */
 }
 
 .streaming-link.youtube:hover {
   background-color: #cc0000;
-  transform: translateY(-4px);
-  box-shadow: 0 6px 12px rgba(255, 0, 0, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(255, 0, 0, 0.3);
 }
 
 .streaming-link.youtube i {
   font-size: 1.2rem;
+  margin-right: 0.5rem;
 }
 
+/* Style for Spotify links */
 .streaming-link.spotify {
   background-color: #1DB954;
   color: white;
 }
 
+/* Style for Apple Music links */
 .streaming-link.apple {
   background-color: #FB233B;
   color: white;
@@ -831,3 +840,4 @@ body.dark .loading-text {
     height: 180px;
   }
 }
+

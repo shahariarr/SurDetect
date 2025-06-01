@@ -221,7 +221,7 @@ async function recognizeSong(audioBlob) {
   const formData = new FormData();
   formData.append('api_token', '451c9bace577382844cb195ec45b387f');
   formData.append('file', audioBlob);
-  formData.append('return', 'apple_music,spotify,youtube');
+  formData.append('return', 'apple_music,spotify,youtube');  // Ensure youtube is requested
 
   try {
     // Show loading state
@@ -240,6 +240,7 @@ async function recognizeSong(audioBlob) {
     });
 
     const data = await response.json();
+    console.log("API Response:", data); // Log the full response for debugging
     
     if (data.status === 'success' && data.result) {
       const { artist, title, album, release_date } = data.result;
@@ -249,10 +250,38 @@ async function recognizeSong(audioBlob) {
                       data.result.apple_music?.artwork?.url?.replace('{w}', '300').replace('{h}', '300') || 
                       'https://via.placeholder.com/300?text=No+Image';
       
-      // Get streaming links
-      const spotifyLink = data.result.spotify?.external_urls?.spotify;
-      const appleLink = data.result.apple_music?.url;
-      const youtubeLink = data.result.youtube?.url;
+      // Get streaming links - make sure to handle all possible response formats
+      let spotifyLink = null;
+      let appleLink = null;
+      let youtubeLink = null;
+      
+      // Extract Spotify link
+      if (data.result.spotify && data.result.spotify.external_urls) {
+        spotifyLink = data.result.spotify.external_urls.spotify;
+      }
+      
+      // Extract Apple Music link
+      if (data.result.apple_music) {
+        appleLink = data.result.apple_music.url;
+      }
+      
+      // Extract YouTube link - handle various possible response formats
+      if (data.result.youtube) {
+        if (typeof data.result.youtube === 'string') {
+          youtubeLink = data.result.youtube;
+        } else if (data.result.youtube.url) {
+          youtubeLink = data.result.youtube.url;
+        } else if (data.result.youtube.link) {
+          youtubeLink = data.result.youtube.link;
+        }
+      }
+      
+      // Fallback to song_link if no specific platform links are available
+      if (!spotifyLink && !appleLink && !youtubeLink && data.result.song_link) {
+        youtubeLink = `https://www.youtube.com/results?search_query=${encodeURIComponent(title + ' ' + artist)}`;
+      }
+      
+      console.log("YouTube Link:", youtubeLink); // Log YouTube link for debugging
       
       // Store current song
       currentSong = {
@@ -266,7 +295,7 @@ async function recognizeSong(audioBlob) {
         timestamp: new Date().toISOString()
       };
       
-      // Update UI with song details
+      // Update UI with song details - put YouTube first and make sure it's visible
       songResult.innerHTML = `
         <div class="song-artwork">
           <img src="${albumArt}" alt="${title}" />
@@ -279,7 +308,8 @@ async function recognizeSong(audioBlob) {
         </div>
         
         <div class="streaming-links">
-          ${youtubeLink ? `<a href="${youtubeLink}" target="_blank" class="streaming-link youtube"><i class="fab fa-youtube"></i> YouTube</a>` : ''}
+          ${youtubeLink ? `<a href="${youtubeLink}" target="_blank" class="streaming-link youtube"><i class="fab fa-youtube"></i> YouTube</a>` : 
+            `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(title + ' ' + artist)}" target="_blank" class="streaming-link youtube"><i class="fab fa-youtube"></i> YouTube দিয়ে খুঁজুন</a>`}
           ${spotifyLink ? `<a href="${spotifyLink}" target="_blank" class="streaming-link spotify"><i class="fab fa-spotify"></i> Spotify</a>` : ''}
           ${appleLink ? `<a href="${appleLink}" target="_blank" class="streaming-link apple"><i class="fab fa-apple"></i> Apple Music</a>` : ''}
         </div>
@@ -301,12 +331,17 @@ async function recognizeSong(audioBlob) {
       });
       
     } else {
-      // No song found
+      // No song found, but still provide a YouTube search option
       songResult.innerHTML = `
         <div class="empty-state">
           <i class="fas fa-music-slash"></i>
           <h3>গান শনাক্ত করা যায়নি</h3>
           <p>দুঃখিত, আমরা আপনার অডিও সম্পর্কে কোন তথ্য খুঁজে পাইনি।</p>
+          <div class="streaming-links">
+            <a href="https://www.youtube.com/" target="_blank" class="streaming-link youtube">
+              <i class="fab fa-youtube"></i> YouTube এ যান
+            </a>
+          </div>
           <button class="share-btn" id="tryAgainBtn">
             <i class="fas fa-redo"></i> আবার চেষ্টা করুন
           </button>
@@ -322,12 +357,17 @@ async function recognizeSong(audioBlob) {
   } catch (err) {
     console.error('Error recognizing song:', err);
     
-    // Show error message
+    // Show error message with YouTube link
     songResult.innerHTML = `
       <div class="empty-state">
         <i class="fas fa-exclamation-triangle"></i>
         <h3>একটি ত্রুটি ঘটেছে</h3>
         <p>দুঃখিত, গান চেনার সময় একটি ত্রুটি দেখা দিয়েছে। আবার চেষ্টা করুন।</p>
+        <div class="streaming-links">
+          <a href="https://www.youtube.com/" target="_blank" class="streaming-link youtube">
+            <i class="fab fa-youtube"></i> YouTube এ যান
+          </a>
+        </div>
         <button class="share-btn" id="tryAgainBtn">
           <i class="fas fa-redo"></i> আবার চেষ্টা করুন
         </button>
@@ -429,7 +469,7 @@ function renderSearchHistory() {
       currentSong = song;
       updateMiniPlayer(song);
       
-      // Show result view with this song
+      // Show result view with this song - ensure YouTube links are shown
       songResult.innerHTML = `
         <div class="song-artwork">
           <img src="${song.albumArt}" alt="${song.title}" />
@@ -442,7 +482,8 @@ function renderSearchHistory() {
         </div>
         
         <div class="streaming-links">
-          ${song.youtubeLink ? `<a href="${song.youtubeLink}" target="_blank" class="streaming-link youtube"><i class="fab fa-youtube"></i> YouTube</a>` : ''}
+          ${song.youtubeLink ? `<a href="${song.youtubeLink}" target="_blank" class="streaming-link youtube"><i class="fab fa-youtube"></i> YouTube</a>` : 
+            `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(song.title + ' ' + song.artist)}" target="_blank" class="streaming-link youtube"><i class="fab fa-youtube"></i> YouTube দিয়ে খুঁজুন</a>`}
           ${song.spotifyLink ? `<a href="${song.spotifyLink}" target="_blank" class="streaming-link spotify"><i class="fab fa-spotify"></i> Spotify</a>` : ''}
           ${song.appleLink ? `<a href="${song.appleLink}" target="_blank" class="streaming-link apple"><i class="fab fa-apple"></i> Apple Music</a>` : ''}
         </div>
@@ -456,8 +497,7 @@ function renderSearchHistory() {
       const shareBtn = songResult.querySelector('.share-btn');
       if (shareBtn) {
         shareBtn.addEventListener('click', () => {
-
-            shareSong(song);
+          shareSong(song);
         });
       }
       
