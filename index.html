@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎵 গান চেনার অ্যাপ</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+      <div class="nav-left">
+        <button id="toggleTheme" class="theme-toggle" aria-label="Toggle theme">
+          <i class="fas fa-moon"></i>
+        </button>
+      </div>
+      <div class="logo">
+        <i class="fas fa-music"></i>
+        <span>BanglaShazam</span>
+      </div>
+      <div class="nav-right">
+        <button id="historyBtn" class="nav-btn" aria-label="History">
+          <i class="fas fa-history"></i>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Listening State -->
+      <div id="listening-view" class="view active-view">
+        <div class="hero-message">
+          <h1>গান চিনতে শুনুন</h1>
+          <p>আশেপাশের গান শনাক্ত করতে বৃত্তে ট্যাপ করুন</p>
+        </div>
+        
+        <!-- Animated Listening Button -->
+        <div class="listening-button-container">
+          <div class="pulse-rings">
+            <div class="ring ring1"></div>
+            <div class="ring ring2"></div>
+            <div class="ring ring3"></div>
+          </div>
+          
+          <button id="recordBtn" class="record-btn">
+            <div class="btn-inner">
+              <i class="fas fa-music"></i>
+            </div>
+          </button>
+          
+          <div id="listening-animation" class="equalizer-container">
+            <div class="bar bar1"></div>
+            <div class="bar bar2"></div>
+            <div class="bar bar3"></div>
+            <div class="bar bar4"></div>
+            <div class="bar bar5"></div>
+          </div>
+          
+          <div id="timer" class="timer">00:00</div>
+          <p id="status" class="status-text"></p>
+        </div>
+      </div>
+      
+      <!-- Results View (Hidden Initially) -->
+      <div id="results-view" class="view">
+        <div class="result-header">
+          <button id="backToListening" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+          <h2>গান পাওয়া গেছে!</h2>
+        </div>
+        
+        <div id="song-result" class="song-result">
+          <!-- Results will be populated here via JavaScript -->
+        </div>
+      </div>
+      
+      <!-- History View (Hidden Initially) -->
+      <div id="history-view" class="view">
+        <div class="history-header">
+          <button id="backFromHistory" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+          <h2>আপনার সাম্প্রতিক গান</h2>
+        </div>
+        
+        <div id="history-list" class="history-list">
+          <!-- History items will be populated here via JavaScript -->
+        </div>
+        
+        <div id="empty-history" class="empty-state hidden">
+          <i class="fas fa-music-slash"></i>
+          <p>আপনি এখনও কোন গান খোঁজেননি</p>
+        </div>
+      </div>
+    </main>
+
+    <!-- Mini Player (Hidden Initially) -->
+    <div id="mini-player" class="mini-player hidden">
+      <div class="mini-player-content">
+        <div class="mini-player-img">
+          <img id="mini-player-img" src="" alt="Album Cover">
+        </div>
+        <div class="mini-player-info">
+          <p id="mini-player-title" class="mini-player-title"></p>
+          <p id="mini-player-artist" class="mini-player-artist"></p>
+        </div>
+        <div class="mini-player-controls">
+          <button id="mini-player-play" class="mini-player-btn">
+            <i class="fas fa-play"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
