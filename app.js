@@ -475,7 +475,7 @@ function renderSearchHistory() {
         
         <div class="streaming-links">
           ${song.youtubeLink ? `<a href="${song.youtubeLink}" target="_blank" class="streaming-link youtube"><i class="fab fa-youtube"></i> YouTube</a>` : 
-            `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(song.title + ' ' + song.artist)}" target="_blank" class="streaming-link youtube"><i class="fab fa-youtube"></i> YouTube দিয়ে খুঁজুন</a>`}
+            `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(song.title + ' ' + song.artist)}" target="_blank" class="streaming-link youtube"><i class="fab fa-youtube"></i> YouTube</a>`}
           ${song.spotifyLink ? `<a href="${song.spotifyLink}" target="_blank" class="streaming-link spotify"><i class="fab fa-spotify"></i> Spotify</a>` : ''}
           ${song.appleLink ? `<a href="${song.appleLink}" target="_blank" class="streaming-link apple"><i class="fab fa-apple"></i> Apple Music</a>` : ''}
         </div>
