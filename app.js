@@ -1,4 +1,3 @@
-// DOM Elements
 const recordBtn = document.getElementById('recordBtn');
 const status = document.getElementById('status');
 const timer = document.getElementById('timer');
