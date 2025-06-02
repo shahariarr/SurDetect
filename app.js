@@ -17,6 +17,7 @@ const emptyHistory = document.getElementById('empty-history');
 const historyBtn = document.getElementById('historyBtn');
 const backToListening = document.getElementById('backToListening');
 const backFromHistory = document.getElementById('backFromHistory');
+const clearHistoryBtn = document.getElementById('clearHistoryBtn'); // Add this line
 
 // Mini Player
 const miniPlayer = document.getElementById('mini-player');
@@ -43,6 +44,38 @@ function initApp() {
     document.body.classList.add('dark');
     toggleTheme.innerHTML = '<i class="fas fa-sun"></i>';
   }
+  
+  // Debug and repair history data
+  try {
+    // Try to load search history
+    const storedHistory = localStorage.getItem('searchHistory');
+    if (storedHistory) {
+      searchHistory = JSON.parse(storedHistory);
+      
+      // Check if history needs repair (add missing timestamps)
+      let needsRepair = false;
+      searchHistory.forEach(song => {
+        if (!song.timestamp) {
+          song.timestamp = new Date().toISOString();
+          needsRepair = true;
+        }
+      });
+      
+      // Save repaired history if needed
+      if (needsRepair) {
+        localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+      }
+      
+      console.log("History loaded, found", searchHistory.length, "items");
+    } else {
+      searchHistory = [];
+      console.log("No history found in localStorage");
+    }
+  } catch (e) {
+    console.error("Error loading history:", e);
+    searchHistory = [];
+    localStorage.setItem('searchHistory', JSON.stringify([]));
+  }
 
   // Set up event listeners
   recordBtn.addEventListener('click', handleRecordClick);
@@ -51,6 +84,23 @@ function initApp() {
   backToListening.addEventListener('click', showListeningView);
   backFromHistory.addEventListener('click', showListeningView);
   miniPlayerPlay.addEventListener('click', handleMiniPlayerClick);
+  clearHistoryBtn.addEventListener('click', clearSearchHistory);
+  
+  // Set up history tab filters
+  setupHistoryTabs();
+  
+  // Set up history search
+  setupHistorySearch();
+  
+  // Example song for testing
+  const hasHistory = searchHistory && searchHistory.length > 0;
+  console.log("Has history:", hasHistory);
+  
+  // Add a sample song for testing if no history
+  if (!hasHistory) {
+    console.log("Adding sample song for testing");
+    addTestSongToHistory();
+  }
   
   // Render history list if any
   renderSearchHistory();
@@ -397,6 +447,11 @@ function handleMiniPlayerClick() {
 
 // Search History Management
 function addToSearchHistory(song) {
+  // Make sure timestamp exists
+  if (!song.timestamp) {
+    song.timestamp = new Date().toISOString();
+  }
+  
   // Check if song is already in history
   const existingIndex = searchHistory.findIndex(item => 
     item.title === song.title && item.artist === song.artist
@@ -427,27 +482,160 @@ function renderSearchHistory() {
   }
   
   emptyHistory.classList.add('hidden');
+  
+  // Get current active filter
+  const activeFilter = document.querySelector('.history-tab.active')?.dataset.filter || 'all';
+  const searchTerm = document.getElementById('historySearch')?.value || '';
+  
+  // Apply filtering
+  filterHistory(activeFilter, searchTerm);
+}
+
+// Add these new functions for history filtering
+
+function setupHistoryTabs() {
+  const historyTabs = document.querySelectorAll('.history-tab');
+  
+  historyTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      // Update active tab
+      historyTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      
+      // Apply filter
+      const filter = tab.dataset.filter;
+      filterHistory(filter);
+    });
+  });
+}
+
+function setupHistorySearch() {
+  const searchInput = document.getElementById('historySearch');
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      const activeFilter = document.querySelector('.history-tab.active').dataset.filter;
+      filterHistory(activeFilter, searchInput.value);
+    });
+  }
+}
+
+function filterHistory(filter, searchTerm = '') {
+  // Log current filter and search term for debugging
+  console.log(`Filtering history: filter=${filter}, searchTerm=${searchTerm}`);
+  console.log(`Current history items: ${searchHistory.length}`);
+
+  // If no history, render the empty state
+  if (!searchHistory || searchHistory.length === 0) {
+    historyList.innerHTML = '';
+    emptyHistory.classList.remove('hidden');
+    return;
+  }
+  
+  emptyHistory.classList.add('hidden');
+  
+  // Filter by date first
+  let filteredHistory = [...searchHistory]; // Create a copy to avoid modifying the original
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - today.getDay()); // Start of current week (Sunday)
+  
+  if (filter === 'today') {
+    filteredHistory = filteredHistory.filter(song => {
+      if (!song.timestamp) return false;
+      try {
+        const songDate = new Date(song.timestamp);
+        return songDate >= today;
+      } catch (e) {
+        console.error("Error comparing dates:", e);
+        return false;
+      }
+    });
+  } else if (filter === 'week') {
+    filteredHistory = filteredHistory.filter(song => {
+      if (!song.timestamp) return false;
+      try {
+        const songDate = new Date(song.timestamp);
+        return songDate >= weekStart;
+      } catch (e) {
+        console.error("Error comparing dates:", e);
+        return false;
+      }
+    });
+  }
+  
+  // Then apply search term if provided
+  if (searchTerm && searchTerm.trim() !== '') {
+    const term = searchTerm.toLowerCase();
+    filteredHistory = filteredHistory.filter(song => 
+      (song.title && song.title.toLowerCase().includes(term)) || 
+      (song.artist && song.artist.toLowerCase().includes(term))
+    );
+  }
+  
+  console.log(`Filtered history items: ${filteredHistory.length}`);
+  
+  // Render filtered results
+  renderFilteredHistory(filteredHistory);
+}
+
+function renderFilteredHistory(filteredHistory) {
+  if (!filteredHistory || filteredHistory.length === 0) {
+    // Show empty state with appropriate message
+    historyList.innerHTML = `
+      <div class="empty-filter-state">
+        <i class="fas fa-search"></i>
+        <p>কোন গান পাওয়া যায়নি</p>
+      </div>
+    `;
+    return;
+  }
+  
+  // Clear previous history items
   historyList.innerHTML = '';
   
-  searchHistory.forEach((song, index) => {
-    // Format date
-    const songDate = new Date(song.timestamp);
-    const today = new Date();
-    let dateText;
+  // Render filtered history items
+  filteredHistory.forEach(song => {
+    // Skip invalid entries
+    if (!song || !song.title || !song.artist) return;
     
-    if (songDate.toDateString() === today.toDateString()) {
-      dateText = 'আজ';
-    } else if (songDate.toDateString() === new Date(today.setDate(today.getDate() - 1)).toDateString()) {
-      dateText = 'গতকাল';
-    } else {
-      dateText = songDate.toLocaleDateString('bn-BD', { year: 'numeric', month: 'short', day: 'numeric' });
+    // Handle missing album art
+    const albumArt = song.albumArt || 'https://via.placeholder.com/300?text=No+Image';
+    
+    // Format date - handle potential missing timestamps
+    let dateText = 'অজানা সময়';
+    if (song.timestamp) {
+      try {
+        const songDate = new Date(song.timestamp);
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        if (songDate.toDateString() === today.toDateString()) {
+          dateText = 'আজ';
+        } else if (songDate.toDateString() === yesterday.toDateString()) {
+          dateText = 'গতকাল';
+        } else {
+          // Use a more reliable date format approach
+          const options = { year: 'numeric', month: 'short', day: 'numeric' };
+          dateText = songDate.toLocaleDateString('bn-BD', options);
+          
+          // Fallback if Bengali locale isn't supported
+          if (dateText === 'Invalid Date') {
+            dateText = songDate.toLocaleDateString(undefined, options);
+          }
+        }
+      } catch (e) {
+        console.error("Error formatting date:", e);
+        dateText = 'অজানা সময়';
+      }
     }
     
     const historyItem = document.createElement('div');
     historyItem.classList.add('history-item');
     historyItem.innerHTML = `
       <div class="history-item-img">
-        <img src="${song.albumArt}" alt="${song.title}">
+        <img src="${albumArt}" alt="${song.title}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
       </div>
       <div class="history-item-info">
         <p class="history-item-title">${song.title}</p>
@@ -461,10 +649,10 @@ function renderSearchHistory() {
       currentSong = song;
       updateMiniPlayer(song);
       
-      // Show result view with this song - ensure YouTube links are shown
+      // Show result view with this song
       songResult.innerHTML = `
         <div class="song-artwork">
-          <img src="${song.albumArt}" alt="${song.title}" />
+          <img src="${albumArt}" alt="${song.title}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
         </div>
         
         <div class="song-info">
@@ -500,21 +688,201 @@ function renderSearchHistory() {
   });
 }
 
-// Share Functionality
-function shareSong(song) {
-  if (navigator.share) {
-    navigator.share({
-      title: song.title,
-      text: `${song.title} by ${song.artist}`,
-      url: song.spotifyLink || song.youtubeLink || song.appleLink || window.location.href
-    }).catch(err => {
-      console.error('Error sharing song:', err);
+// Add this debugging and repair function
+function initApp() {
+  // Load saved theme
+  if (localStorage.getItem('theme') === 'dark') {
+    document.body.classList.add('dark');
+    toggleTheme.innerHTML = '<i class="fas fa-sun"></i>';
+  }
+  
+  // Debug and repair history data
+  try {
+    // Try to load search history
+    const storedHistory = localStorage.getItem('searchHistory');
+    if (storedHistory) {
+      searchHistory = JSON.parse(storedHistory);
+      
+      // Check if history needs repair (add missing timestamps)
+      let needsRepair = false;
+      searchHistory.forEach(song => {
+        if (!song.timestamp) {
+          song.timestamp = new Date().toISOString();
+          needsRepair = true;
+        }
+      });
+      
+      // Save repaired history if needed
+      if (needsRepair) {
+        localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+      }
+      
+      console.log("History loaded, found", searchHistory.length, "items");
+    } else {
+      searchHistory = [];
+      console.log("No history found in localStorage");
+    }
+  } catch (e) {
+    console.error("Error loading history:", e);
+    searchHistory = [];
+    localStorage.setItem('searchHistory', JSON.stringify([]));
+  }
+
+  // Set up event listeners
+  recordBtn.addEventListener('click', handleRecordClick);
+  toggleTheme.addEventListener('click', toggleDarkMode);
+  historyBtn.addEventListener('click', showHistoryView);
+  backToListening.addEventListener('click', showListeningView);
+  backFromHistory.addEventListener('click', showListeningView);
+  miniPlayerPlay.addEventListener('click', handleMiniPlayerClick);
+  clearHistoryBtn.addEventListener('click', clearSearchHistory);
+  
+  // Set up history tab filters
+  setupHistoryTabs();
+  
+  // Set up history search
+  setupHistorySearch();
+  
+  // Example song for testing
+  const hasHistory = searchHistory && searchHistory.length > 0;
+  console.log("Has history:", hasHistory);
+  
+  // Add a sample song for testing if no history
+  if (!hasHistory) {
+    console.log("Adding sample song for testing");
+    addTestSongToHistory();
+  }
+  
+  // Render history list if any
+  renderSearchHistory();
+}
+
+// Add this helper function for testing
+function addTestSongToHistory() {
+  const testSong = {
+    title: "Test Song Title",
+    artist: "Test Artist",
+    album: "Test Album",
+    albumArt: "https://via.placeholder.com/300?text=Test+Cover",
+    timestamp: new Date().toISOString()
+  };
+  addToSearchHistory(testSong);
+}
+
+// Modify filterHistory to handle edge cases better
+function filterHistory(filter, searchTerm = '') {
+  // Log current filter and search term for debugging
+  console.log(`Filtering history: filter=${filter}, searchTerm=${searchTerm}`);
+  console.log(`Current history items: ${searchHistory.length}`);
+
+  // If no history, render the empty state
+  if (!searchHistory || searchHistory.length === 0) {
+    historyList.innerHTML = '';
+    emptyHistory.classList.remove('hidden');
+    return;
+  }
+  
+  emptyHistory.classList.add('hidden');
+  
+  // Filter by date first
+  let filteredHistory = [...searchHistory]; // Create a copy to avoid modifying the original
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - today.getDay()); // Start of current week (Sunday)
+  
+  if (filter === 'today') {
+    filteredHistory = filteredHistory.filter(song => {
+      if (!song.timestamp) return false;
+      try {
+        const songDate = new Date(song.timestamp);
+        return songDate >= today;
+      } catch (e) {
+        console.error("Error comparing dates:", e);
+        return false;
+      }
     });
-  } else {
-    // Fallback for browsers that don't support Web Share API
-    alert(`Share this song: ${song.title} by ${song.artist}`);
+  } else if (filter === 'week') {
+    filteredHistory = filteredHistory.filter(song => {
+      if (!song.timestamp) return false;
+      try {
+        const songDate = new Date(song.timestamp);
+        return songDate >= weekStart;
+      } catch (e) {
+        console.error("Error comparing dates:", e);
+        return false;
+      }
+    });
+  }
+  
+  // Then apply search term if provided
+  if (searchTerm && searchTerm.trim() !== '') {
+    const term = searchTerm.toLowerCase();
+    filteredHistory = filteredHistory.filter(song => 
+      (song.title && song.title.toLowerCase().includes(term)) || 
+      (song.artist && song.artist.toLowerCase().includes(term))
+    );
+  }
+  
+  console.log(`Filtered history items: ${filteredHistory.length}`);
+  
+  // Render filtered results
+  renderFilteredHistory(filteredHistory);
+}
+
+// Add this function to clear search history
+function clearSearchHistory() {
+  // Show confirmation dialog
+  if (confirm('আপনি কি নিশ্চিত যে আপনি সমস্ত ইতিহাস মুছতে চান?')) {
+    // Clear history array
+    searchHistory = [];
+    
+    // Update local storage
+    localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+    
+    // Re-render empty history view
+    renderSearchHistory();
+    
+    // Hide mini player if visible
+    miniPlayer.classList.add('hidden');
   }
 }
 
-// Initialize app on DOMContentLoaded
+// Add this function to help with sharing songs
+function shareSong(song) {
+  if (!song) return;
+  
+  const text = `${song.title} by ${song.artist} - Found with SurDetect`;
+  
+  // Check if Web Share API is supported
+  if (navigator.share) {
+    navigator.share({
+      title: 'SurDetect - Song Discovery',
+      text: text,
+      url: song.youtubeLink || song.spotifyLink || window.location.href
+    })
+    .catch(err => {
+      console.error('Error sharing:', err);
+      fallbackShare(text);
+    });
+  } else {
+    fallbackShare(text);
+  }
+}
+
+// Fallback sharing method
+function fallbackShare(text) {
+  // Create a temporary input to copy the text
+  const input = document.createElement('input');
+  input.value = text;
+  document.body.appendChild(input);
+  input.select();
+  document.execCommand('copy');
+  document.body.removeChild(input);
+  
+  // Show a confirmation message
+  alert('টেক্সট কপি করা হয়েছে, আপনি এখন এটি শেয়ার করতে পারেন।');
+}
+
+// Initialize the app when the document is loaded
 document.addEventListener('DOMContentLoaded', initApp);
