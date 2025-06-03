@@ -91,16 +91,6 @@ function initApp() {
   // Set up history search
   setupHistorySearch();
   
-  // Example song for testing
-  const hasHistory = searchHistory && searchHistory.length > 0;
-  console.log("Has history:", hasHistory);
-  
-  // Add a sample song for testing if no history
-  if (!hasHistory) {
-    console.log("Adding sample song for testing");
-    addTestSongToHistory();
-  }
-  
   // Render history list if any
   renderSearchHistory();
 }
@@ -297,7 +287,7 @@ async function recognizeSong(audioBlob) {
       // Get album artwork from Spotify or Apple Music, or use placeholder
       const albumArt = data.result.spotify?.album?.images?.[0]?.url || 
                       data.result.apple_music?.artwork?.url?.replace('{w}', '300').replace('{h}', '300') || 
-                      'https://via.placeholder.com/300?text=No+Image';
+                      'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22300%22%20height%3D%22300%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22300%22%20height%3D%22300%22%20fill%3D%22%23EEEEEE%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22Arial%2C%20sans-serif%22%20font-size%3D%2220%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22middle%22%20fill%3D%22%23999999%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E';
       
       // Get streaming links - make sure to handle all possible response formats
       let spotifyLink = null;
@@ -490,7 +480,10 @@ function renderSearchHistory() {
   filterHistory(activeFilter, searchTerm);
 }
 
-// Add these new functions for history filtering
+// Remove the duplicate initApp function around line 700
+// Keep only one version of setupHistoryTabs, setupHistorySearch, and filterHistory functions
+
+// Update the history filtering functions to be simpler:
 
 function setupHistoryTabs() {
   const historyTabs = document.querySelectorAll('.history-tab');
@@ -519,10 +512,6 @@ function setupHistorySearch() {
 }
 
 function filterHistory(filter, searchTerm = '') {
-  // Log current filter and search term for debugging
-  console.log(`Filtering history: filter=${filter}, searchTerm=${searchTerm}`);
-  console.log(`Current history items: ${searchHistory.length}`);
-
   // If no history, render the empty state
   if (!searchHistory || searchHistory.length === 0) {
     historyList.innerHTML = '';
@@ -533,33 +522,23 @@ function filterHistory(filter, searchTerm = '') {
   emptyHistory.classList.add('hidden');
   
   // Filter by date first
-  let filteredHistory = [...searchHistory]; // Create a copy to avoid modifying the original
+  let filteredHistory = [...searchHistory]; 
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekStart = new Date(today);
-  weekStart.setDate(today.getDate() - today.getDay()); // Start of current week (Sunday)
+  weekStart.setDate(today.getDate() - today.getDay()); 
   
   if (filter === 'today') {
     filteredHistory = filteredHistory.filter(song => {
       if (!song.timestamp) return false;
-      try {
-        const songDate = new Date(song.timestamp);
-        return songDate >= today;
-      } catch (e) {
-        console.error("Error comparing dates:", e);
-        return false;
-      }
+      const songDate = new Date(song.timestamp);
+      return songDate >= today;
     });
   } else if (filter === 'week') {
     filteredHistory = filteredHistory.filter(song => {
       if (!song.timestamp) return false;
-      try {
-        const songDate = new Date(song.timestamp);
-        return songDate >= weekStart;
-      } catch (e) {
-        console.error("Error comparing dates:", e);
-        return false;
-      }
+      const songDate = new Date(song.timestamp);
+      return songDate >= weekStart;
     });
   }
   
@@ -571,8 +550,6 @@ function filterHistory(filter, searchTerm = '') {
       (song.artist && song.artist.toLowerCase().includes(term))
     );
   }
-  
-  console.log(`Filtered history items: ${filteredHistory.length}`);
   
   // Render filtered results
   renderFilteredHistory(filteredHistory);
@@ -595,38 +572,23 @@ function renderFilteredHistory(filteredHistory) {
   
   // Render filtered history items
   filteredHistory.forEach(song => {
-    // Skip invalid entries
-    if (!song || !song.title || !song.artist) return;
-    
     // Handle missing album art
-    const albumArt = song.albumArt || 'https://via.placeholder.com/300?text=No+Image';
+    const albumArt = song.albumArt || 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22300%22%20height%3D%22300%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22300%22%20height%3D%22300%22%20fill%3D%22%23EEEEEE%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22Arial%2C%20sans-serif%22%20font-size%3D%2220%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22middle%22%20fill%3D%22%23999999%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E';
     
-    // Format date - handle potential missing timestamps
+    // Format date
     let dateText = 'অজানা সময়';
     if (song.timestamp) {
-      try {
-        const songDate = new Date(song.timestamp);
-        const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        
-        if (songDate.toDateString() === today.toDateString()) {
-          dateText = 'আজ';
-        } else if (songDate.toDateString() === yesterday.toDateString()) {
-          dateText = 'গতকাল';
-        } else {
-          // Use a more reliable date format approach
-          const options = { year: 'numeric', month: 'short', day: 'numeric' };
-          dateText = songDate.toLocaleDateString('bn-BD', options);
-          
-          // Fallback if Bengali locale isn't supported
-          if (dateText === 'Invalid Date') {
-            dateText = songDate.toLocaleDateString(undefined, options);
-          }
-        }
-      } catch (e) {
-        console.error("Error formatting date:", e);
-        dateText = 'অজানা সময়';
+      const songDate = new Date(song.timestamp);
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      if (songDate.toDateString() === today.toDateString()) {
+        dateText = 'আজ';
+      } else if (songDate.toDateString() === yesterday.toDateString()) {
+        dateText = 'গতকাল';
+      } else {
+        dateText = songDate.toLocaleDateString('bn-BD', { year: 'numeric', month: 'short', day: 'numeric' });
       }
     }
     
@@ -634,7 +596,7 @@ function renderFilteredHistory(filteredHistory) {
     historyItem.classList.add('history-item');
     historyItem.innerHTML = `
       <div class="history-item-img">
-        <img src="${albumArt}" alt="${song.title}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
+        <img src="${albumArt}" alt="${song.title}" onerror="this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22300%22%20height%3D%22300%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22300%22%20height%3D%22300%22%20fill%3D%22%23EEEEEE%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22Arial%2C%20sans-serif%22%20font-size%3D%2220%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22middle%22%20fill%3D%22%23999999%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E'">
       </div>
       <div class="history-item-info">
         <p class="history-item-title">${song.title}</p>
@@ -647,11 +609,12 @@ function renderFilteredHistory(filteredHistory) {
     historyItem.addEventListener('click', () => {
       currentSong = song;
       updateMiniPlayer(song);
+      showResultsView();
       
-      // Show result view with this song
+      // Show song details in the results view
       songResult.innerHTML = `
         <div class="song-artwork">
-          <img src="${albumArt}" alt="${song.title}" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
+          <img src="${albumArt}" alt="${song.title}" onerror="this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22300%22%20height%3D%22300%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22300%22%20height%3D%22300%22%20fill%3D%22%23EEEEEE%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22Arial%2C%20sans-serif%22%20font-size%3D%2220%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22middle%22%20fill%3D%22%23999999%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E'">
         </div>
         
         <div class="song-info">
@@ -679,157 +642,15 @@ function renderFilteredHistory(filteredHistory) {
           shareSong(song);
         });
       }
-      
-      showResultsView();
     });
     
     historyList.appendChild(historyItem);
   });
 }
 
-// Add this debugging and repair function
-function initApp() {
-  // Load saved theme
-  if (localStorage.getItem('theme') === 'dark') {
-    document.body.classList.add('dark');
-    toggleTheme.innerHTML = '<i class="fas fa-sun"></i>';
-  }
-  
-  // Debug and repair history data
-  try {
-    // Try to load search history
-    const storedHistory = localStorage.getItem('searchHistory');
-    if (storedHistory) {
-      searchHistory = JSON.parse(storedHistory);
-      
-      // Check if history needs repair (add missing timestamps)
-      let needsRepair = false;
-      searchHistory.forEach(song => {
-        if (!song.timestamp) {
-          song.timestamp = new Date().toISOString();
-          needsRepair = true;
-        }
-      });
-      
-      // Save repaired history if needed
-      if (needsRepair) {
-        localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
-      }
-      
-      console.log("History loaded, found", searchHistory.length, "items");
-    } else {
-      searchHistory = [];
-      console.log("No history found in localStorage");
-    }
-  } catch (e) {
-    console.error("Error loading history:", e);
-    searchHistory = [];
-    localStorage.setItem('searchHistory', JSON.stringify([]));
-  }
+// Add the missing function for clearing history and properly close all functions
 
-  // Set up event listeners
-  recordBtn.addEventListener('click', handleRecordClick);
-  toggleTheme.addEventListener('click', toggleDarkMode);
-  historyBtn.addEventListener('click', showHistoryView);
-  backToListening.addEventListener('click', showListeningView);
-  backFromHistory.addEventListener('click', showListeningView);
-  miniPlayerPlay.addEventListener('click', handleMiniPlayerClick);
-  clearHistoryBtn.addEventListener('click', clearSearchHistory);
-  
-  // Set up history tab filters
-  setupHistoryTabs();
-  
-  // Set up history search
-  setupHistorySearch();
-  
-  // Example song for testing
-  const hasHistory = searchHistory && searchHistory.length > 0;
-  console.log("Has history:", hasHistory);
-  
-  // Add a sample song for testing if no history
-  if (!hasHistory) {
-    console.log("Adding sample song for testing");
-    addTestSongToHistory();
-  }
-  
-  // Render history list if any
-  renderSearchHistory();
-}
-
-// Add this helper function for testing
-function addTestSongToHistory() {
-  const testSong = {
-    title: "Test Song Title",
-    artist: "Test Artist",
-    album: "Test Album",
-    albumArt: "https://via.placeholder.com/300?text=Test+Cover",
-    timestamp: new Date().toISOString()
-  };
-  addToSearchHistory(testSong);
-}
-
-// Modify filterHistory to handle edge cases better
-function filterHistory(filter, searchTerm = '') {
-  // Log current filter and search term for debugging
-  console.log(`Filtering history: filter=${filter}, searchTerm=${searchTerm}`);
-  console.log(`Current history items: ${searchHistory.length}`);
-
-  // If no history, render the empty state
-  if (!searchHistory || searchHistory.length === 0) {
-    historyList.innerHTML = '';
-    emptyHistory.classList.remove('hidden');
-    return;
-  }
-  
-  emptyHistory.classList.add('hidden');
-  
-  // Filter by date first
-  let filteredHistory = [...searchHistory]; // Create a copy to avoid modifying the original
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const weekStart = new Date(today);
-  weekStart.setDate(today.getDate() - today.getDay()); // Start of current week (Sunday)
-  
-  if (filter === 'today') {
-    filteredHistory = filteredHistory.filter(song => {
-      if (!song.timestamp) return false;
-      try {
-        const songDate = new Date(song.timestamp);
-        return songDate >= today;
-      } catch (e) {
-        console.error("Error comparing dates:", e);
-        return false;
-      }
-    });
-  } else if (filter === 'week') {
-    filteredHistory = filteredHistory.filter(song => {
-      if (!song.timestamp) return false;
-      try {
-        const songDate = new Date(song.timestamp);
-        return songDate >= weekStart;
-      } catch (e) {
-        console.error("Error comparing dates:", e);
-        return false;
-      }
-    });
-  }
-  
-  // Then apply search term if provided
-  if (searchTerm && searchTerm.trim() !== '') {
-    const term = searchTerm.toLowerCase();
-    filteredHistory = filteredHistory.filter(song => 
-      (song.title && song.title.toLowerCase().includes(term)) || 
-      (song.artist && song.artist.toLowerCase().includes(term))
-    );
-  }
-  
-  console.log(`Filtered history items: ${filteredHistory.length}`);
-  
-  // Render filtered results
-  renderFilteredHistory(filteredHistory);
-}
-
-// Add this function to clear search history
+// Add this function for clearing search history
 function clearSearchHistory() {
   // Show confirmation dialog
   if (confirm('আপনি কি নিশ্চিত যে আপনি সমস্ত ইতিহাস মুছতে চান?')) {
@@ -847,7 +668,7 @@ function clearSearchHistory() {
   }
 }
 
-// Add this function to help with sharing songs
+// Add this function for sharing songs
 function shareSong(song) {
   if (!song) return;
   
@@ -881,6 +702,100 @@ function fallbackShare(text) {
   
   // Show a confirmation message
   alert('টেক্সট কপি করা হয়েছে, আপনি এখন এটি শেয়ার করতে পারেন।');
+}
+
+// Complete the renderFilteredHistory function that was cut off
+function renderFilteredHistory(filteredHistory) {
+  if (!filteredHistory || filteredHistory.length === 0) {
+    // Show empty state with appropriate message
+    historyList.innerHTML = `
+      <div class="empty-filter-state">
+        <i class="fas fa-search"></i>
+        <p>কোন গান পাওয়া যায়নি</p>
+      </div>
+    `;
+    return;
+  }
+  
+  // Clear previous history items
+  historyList.innerHTML = '';
+  
+  // Render filtered history items
+  filteredHistory.forEach(song => {
+    // Handle missing album art
+    const albumArt = song.albumArt || 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22300%22%20height%3D%22300%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22300%22%20height%3D%22300%22%20fill%3D%22%23EEEEEE%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22Arial%2C%20sans-serif%22%20font-size%3D%2220%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22middle%22%20fill%3D%22%23999999%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E';
+    
+    // Format date
+    let dateText = 'অজানা সময়';
+    if (song.timestamp) {
+      const songDate = new Date(song.timestamp);
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      if (songDate.toDateString() === today.toDateString()) {
+        dateText = 'আজ';
+      } else if (songDate.toDateString() === yesterday.toDateString()) {
+        dateText = 'গতকাল';
+      } else {
+        dateText = songDate.toLocaleDateString('bn-BD', { year: 'numeric', month: 'short', day: 'numeric' });
+      }
+    }
+    
+    const historyItem = document.createElement('div');
+    historyItem.classList.add('history-item');
+    historyItem.innerHTML = `
+      <div class="history-item-img">
+        <img src="${albumArt}" alt="${song.title}" onerror="this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22300%22%20height%3D%22300%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22300%22%20height%3D%22300%22%20fill%3D%22%23EEEEEE%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22Arial%2C%20sans-serif%22%20font-size%3D%2220%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22middle%22%20fill%3D%22%23999999%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E'">
+      </div>
+      <div class="history-item-info">
+        <p class="history-item-title">${song.title}</p>
+        <p class="history-item-artist">${song.artist}</p>
+        <p class="history-item-date">${dateText}</p>
+      </div>
+    `;
+    
+    // Add click handler
+    historyItem.addEventListener('click', () => {
+      currentSong = song;
+      updateMiniPlayer(song);
+      showResultsView();
+      
+      // Show song details in the results view
+      songResult.innerHTML = `
+        <div class="song-artwork">
+          <img src="${albumArt}" alt="${song.title}" onerror="this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22300%22%20height%3D%22300%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22300%22%20height%3D%22300%22%20fill%3D%22%23EEEEEE%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22Arial%2C%20sans-serif%22%20font-size%3D%2220%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22middle%22%20fill%3D%22%23999999%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E'">
+        </div>
+        
+        <div class="song-info">
+          <h3 class="song-title">${song.title}</h3>
+          <p class="song-artist">${song.artist}</p>
+          ${song.album ? `<p class="song-album">${song.album}</p>` : ''}
+        </div>
+        
+        <div class="streaming-links">
+          ${song.youtubeLink ? `<a href="${song.youtubeLink}" target="_blank" class="streaming-link youtube"><i class="fab fa-youtube"></i> YouTube</a>` : 
+            `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(song.title + ' ' + song.artist)}" target="_blank" class="streaming-link youtube"><i class="fab fa-youtube"></i> YouTube</a>`}
+          ${song.spotifyLink ? `<a href="${song.spotifyLink}" target="_blank" class="streaming-link spotify"><i class="fab fa-spotify"></i> Spotify</a>` : ''}
+          ${song.appleLink ? `<a href="${song.appleLink}" target="_blank" class="streaming-link apple"><i class="fab fa-apple"></i> Apple Music</a>` : ''}
+        </div>
+        
+        <button class="share-btn">
+          <i class="fas fa-share-alt"></i> শেয়ার করুন
+        </button>
+      `;
+      
+      // Add event listener to share button
+      const shareBtn = songResult.querySelector('.share-btn');
+      if (shareBtn) {
+        shareBtn.addEventListener('click', () => {
+          shareSong(song);
+        });
+      }
+    });
+    
+    historyList.appendChild(historyItem);
+  });
 }
 
 // Initialize the app when the document is loaded
