@@ -348,7 +348,7 @@ async function recognizeSong(audioBlob) {
         
         <div class="streaming-links">
           ${youtubeLink ? `<a href="${youtubeLink}" target="_blank" class="streaming-link youtube"><i class="fab fa-youtube"></i> YouTube</a>` : 
-            `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(title + ' ' + artist)}" target="_blank" class="streaming-link youtube"><i class="fab fa-youtube"></i> YouTube দিয়ে খুঁজুন</a>`}
+            `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(title + ' ' + artist)}" target="_blank" class="streaming-link youtube"><i class="fab fa-youtube"></i>YouTube</a>`}
           ${spotifyLink ? `<a href="${spotifyLink}" target="_blank" class="streaming-link spotify"><i class="fab fa-spotify"></i> Spotify</a>` : ''}
           ${appleLink ? `<a href="${appleLink}" target="_blank" class="streaming-link apple"><i class="fab fa-apple"></i> Apple Music</a>` : ''}
         </div>
